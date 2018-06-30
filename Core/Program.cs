@@ -14,9 +14,7 @@ namespace Core
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-
-            GoogleSigned.AssignAllServices(new GoogleSigned("API_KEY"));
-
+            GoogleSigned.AssignAllServices(new GoogleSigned(Settings.API_KEY));
             Application.Run(new GeographyForm());
         }
     }

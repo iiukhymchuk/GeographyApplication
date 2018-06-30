@@ -3,6 +3,7 @@ using Google.Maps.StaticMaps;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -10,6 +11,7 @@ namespace Core
 {
     public partial class GeographyForm : Form
     {
+        bool searchBoxError = false;
         bool waterMarkActive;
         int currentZoom = 11;
 
@@ -27,6 +29,7 @@ namespace Core
             InitializeSearchTextBox();
             SetWatermark();
             roadMap.Checked = true;
+            radioButtonsPanel.Click += RadioButtonsPanel_Click;
         }
 
         void FixApplicationSize()
@@ -72,6 +75,11 @@ namespace Core
             {
                 SetWatermarkActive(searchTextBox);
             }
+
+            if (searchBoxError)
+            {
+                SetWatermarkActive(searchTextBox);
+            }
         }
 
         void PictureBox_Click(object sender, EventArgs e)
@@ -79,7 +87,7 @@ namespace Core
             webBrowser.Focus();
         }
 
-        private void panel1_Paint(object sender, EventArgs e)
+        void RadioButtonsPanel_Click(object sender, EventArgs e)
         {
             webBrowser.Focus();
         }
@@ -147,6 +155,9 @@ namespace Core
 
         async Task SearchAddressAsync(string text)
         {
+            searchBoxError = false;
+            searchTextBox.ForeColor = Color.Black;
+
             var staticMapsRequest = new StaticMapRequest();
             staticMapsRequest.Center = new Location(text);
             staticMapsRequest.Size = new MapSize(600, 600);
@@ -155,8 +166,33 @@ namespace Core
 
             var staticMapsService = new StaticMapService();
 
-            var image = await staticMapsService.GetStreamAsync(staticMapsRequest);
-            pictureBox.Image = ByteToImage(image);
+            var byteArray = await staticMapsService.GetImageAsync(staticMapsRequest);
+
+            var errorHash = "6i62JfRBdd+DQcwx5Q0p4MpeYWI=";
+            string hash = CulculateSHA1Hash(byteArray);
+
+            if (hash == errorHash)
+            {
+                searchBoxError = true;
+                searchTextBox.ForeColor = Color.Red;
+                return;
+            }
+
+            Bitmap image;
+            using (var ms = new MemoryStream(byteArray))
+            {
+                image = new Bitmap(ms);
+            }
+
+            pictureBox.Image = image;
+        }
+
+        static string CulculateSHA1Hash(byte[] byteArray)
+        {
+            using (SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider())
+            {
+                return Convert.ToBase64String(sha1.ComputeHash(byteArray));
+            }
         }
 
         async Task RadioButtonCheckedChanged()
@@ -167,13 +203,6 @@ namespace Core
             }
 
             await SearchAddressAsync(searchTextBox.Text);
-        }
-
-        static Bitmap ByteToImage(Stream stream)
-        {
-            Bitmap bm = new Bitmap(stream);
-            stream.Dispose();
-            return bm;
         }
 
         public MapTypes MapType =>
