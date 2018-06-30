@@ -2,8 +2,7 @@
 using Google.Maps.StaticMaps;
 using System;
 using System.Drawing;
-using System.IO;
-using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -43,6 +42,7 @@ namespace Core
         void InitializeImage()
         {
             pictureBox.Click += PictureBox_Click;
+            pictureBox.Image = DataSource.GetInitialImage();
         }
 
         void InitializeSearchTextBox()
@@ -158,18 +158,27 @@ namespace Core
             searchBoxError = false;
             searchTextBox.ForeColor = Color.Black;
 
-            var staticMapsRequest = new StaticMapRequest();
-            staticMapsRequest.Center = new Location(text);
-            staticMapsRequest.Size = new MapSize(600, 600);
-            staticMapsRequest.Zoom = currentZoom;
-            staticMapsRequest.MapType = MapType;
+            var cachedImage = DataSource.GetCachedImage(text, currentZoom, MapType);
+            if (cachedImage != null)
+            {
+                pictureBox.Image = cachedImage;
+                return;
+            }
 
+            var staticMapsRequest = new StaticMapRequest
+            {
+                Center = new Location(text),
+                Size = new MapSize(600, 600),
+                Zoom = currentZoom,
+                MapType = MapType
+            };
             var staticMapsService = new StaticMapService();
 
             var byteArray = await staticMapsService.GetImageAsync(staticMapsRequest);
-
             var errorHash = "6i62JfRBdd+DQcwx5Q0p4MpeYWI=";
-            string hash = CulculateSHA1Hash(byteArray);
+            string hash = Utils.CulculateSHA1Hash(byteArray);
+
+            DataSource.CacheImage(text, currentZoom, MapType, byteArray);
 
             if (hash == errorHash)
             {
@@ -178,21 +187,16 @@ namespace Core
                 return;
             }
 
-            Bitmap image;
-            using (var ms = new MemoryStream(byteArray))
-            {
-                image = new Bitmap(ms);
-            }
-
-            pictureBox.Image = image;
+            pictureBox.Image = Utils.BytesArrayToBitmap(byteArray);
         }
 
-        static string CulculateSHA1Hash(byte[] byteArray)
+        public static string ByteArrayToString(byte[] ba)
         {
-            using (SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider())
-            {
-                return Convert.ToBase64String(sha1.ComputeHash(byteArray));
-            }
+            StringBuilder hex = new StringBuilder(ba.Length * 2);
+            hex.Append("0x");
+            foreach (byte b in ba)
+                hex.AppendFormat("{0:x2}", b);
+            return hex.ToString();
         }
 
         async Task RadioButtonCheckedChanged()

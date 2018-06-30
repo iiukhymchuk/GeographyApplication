@@ -12,9 +12,12 @@ namespace Core
         [STAThread]
         static void Main()
         {
+            // custom settings
+            AppDomain.CurrentDomain.SetData("DataDirectory", Settings.GetAppDataDirectory());
+            GoogleSigned.AssignAllServices(new GoogleSigned(Settings.API_KEY));
+            // winforms settings
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            GoogleSigned.AssignAllServices(new GoogleSigned(Settings.API_KEY));
             Application.Run(new GeographyForm());
         }
     }
