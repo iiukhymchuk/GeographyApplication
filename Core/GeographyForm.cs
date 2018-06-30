@@ -26,6 +26,7 @@ namespace Core
             InitializeImage();
             InitializeSearchTextBox();
             SetWatermark();
+            roadMap.Checked = true;
         }
 
         void FixApplicationSize()
@@ -78,6 +79,11 @@ namespace Core
             webBrowser.Focus();
         }
 
+        private void panel1_Paint(object sender, EventArgs e)
+        {
+            webBrowser.Focus();
+        }
+
         async void GeographyForm_EnterKeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar != (char)Keys.Return)
@@ -113,6 +119,21 @@ namespace Core
             await SearchAddressAsync(searchTextBox.Text);
         }
 
+        async void RoadMap_CheckedChanged(object sender, EventArgs e)
+        {
+            await RadioButtonCheckedChanged();
+        }
+
+        async void Satellite_CheckedChanged(object sender, EventArgs e)
+        {
+            await RadioButtonCheckedChanged();
+        }
+
+        async void Terrain_CheckedChanged(object sender, EventArgs e)
+        {
+            await RadioButtonCheckedChanged();
+        }
+
         // Helper methods
         void SetWatermarkActive(TextBox textBox)
         {
@@ -130,6 +151,7 @@ namespace Core
             staticMapsRequest.Center = new Location(text);
             staticMapsRequest.Size = new MapSize(600, 600);
             staticMapsRequest.Zoom = currentZoom;
+            staticMapsRequest.MapType = MapType;
 
             var staticMapsService = new StaticMapService();
 
@@ -137,11 +159,28 @@ namespace Core
             pictureBox.Image = ByteToImage(image);
         }
 
-        public static Bitmap ByteToImage(Stream stream)
+        async Task RadioButtonCheckedChanged()
+        {
+            if (string.IsNullOrWhiteSpace(searchTextBox.Text) || waterMarkActive)
+            {
+                return;
+            }
+
+            await SearchAddressAsync(searchTextBox.Text);
+        }
+
+        static Bitmap ByteToImage(Stream stream)
         {
             Bitmap bm = new Bitmap(stream);
             stream.Dispose();
             return bm;
         }
+
+        public MapTypes MapType =>
+            roadMap.Checked
+                ? MapTypes.Roadmap
+                : satellite.Checked
+                    ? MapTypes.Hybrid
+                    : MapTypes.Terrain;
     }
 }
