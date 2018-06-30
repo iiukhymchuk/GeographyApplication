@@ -11,6 +11,7 @@ namespace Core
     public partial class GeographyForm : Form
     {
         bool waterMarkActive;
+        int currentZoom = 11;
 
         public GeographyForm()
         {
@@ -89,8 +90,27 @@ namespace Core
                 return;
             }
 
-            var image = await SearchAddressAsync(searchTextBox.Text);
-            pictureBox.Image = ByteToImage(image);
+            await SearchAddressAsync(searchTextBox.Text);
+        }
+
+        async void PlusButton_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(searchTextBox.Text) || waterMarkActive)
+            {
+                return;
+            }
+            currentZoom = Math.Min(currentZoom + 1, 18);
+            await SearchAddressAsync(searchTextBox.Text);
+        }
+
+        async void MinusButton_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(searchTextBox.Text) || waterMarkActive)
+            {
+                return;
+            }
+            currentZoom = Math.Max(currentZoom - 1, 4);
+            await SearchAddressAsync(searchTextBox.Text);
         }
 
         // Helper methods
@@ -104,16 +124,17 @@ namespace Core
             textBox.Text = watermarkText;
         }
 
-        async Task<Stream> SearchAddressAsync(string text, int zoom = 14)
+        async Task SearchAddressAsync(string text)
         {
             var staticMapsRequest = new StaticMapRequest();
             staticMapsRequest.Center = new Location(text);
-            staticMapsRequest.Size = new MapSize(700, 700);
-            staticMapsRequest.Zoom = zoom;
+            staticMapsRequest.Size = new MapSize(600, 600);
+            staticMapsRequest.Zoom = currentZoom;
 
             var staticMapsService = new StaticMapService();
 
-            return await staticMapsService.GetStreamAsync(staticMapsRequest);
+            var image = await staticMapsService.GetStreamAsync(staticMapsRequest);
+            pictureBox.Image = ByteToImage(image);
         }
 
         public static Bitmap ByteToImage(Stream stream)
