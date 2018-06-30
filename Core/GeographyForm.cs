@@ -2,6 +2,7 @@
 using Google.Maps.StaticMaps;
 using System;
 using System.Drawing;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -104,7 +105,22 @@ namespace Core
                 return;
             }
 
-            await SearchAddressAsync(searchTextBox.Text);
+            try
+            {
+                await SearchAddressAsync(searchTextBox.Text);
+            }
+            catch (HttpRequestException ex) when (ex.Message == "Response status code does not indicate success: 403 (Forbidden).")
+            {
+                MessageBox.Show("Add proper API_KEY to settings file",
+                    "Wrong api key", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (HttpRequestException ex) when (ex.Message == "An error occurred while sending the request."
+                && ex.InnerException.Message == "The remote name could not be resolved: 'maps.google.com'")
+            {
+                MessageBox.Show("Problems with connection to the internet",
+                    "Connection Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
         }
 
         async void PlusButton_Click(object sender, EventArgs e)
