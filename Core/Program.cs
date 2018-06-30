@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Google.Maps;
+using System;
 using System.Windows.Forms;
 
 namespace Core
@@ -16,7 +14,10 @@ namespace Core
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+
+            GoogleSigned.AssignAllServices(new GoogleSigned("API_KEY"));
+
+            Application.Run(new GeographyForm());
         }
     }
 }
